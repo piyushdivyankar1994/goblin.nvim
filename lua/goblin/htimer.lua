@@ -1,34 +1,42 @@
 -- lua/goblin/htimer.lua
-local Timer = require("plenary.timer")
-
 local M = {}
 
 local timer = nil
 
-function M.start()
-  if timer then
-    return -- already running
-  end
+local defaults = {
+    delay = 2000,
+    interval = 1800000,
+    message = "Time to get a drink",
+}
 
-  timer = Timer:new()
+function M.start(opts)
+    if timer then
+        return -- already running
+    end
 
-  timer:start(
-    2000,  -- delay (ms)
-    2000,  -- repeat (ms)
-    vim.schedule_wrap(function()
-      print("hello world")
-    end)
-  )
+    opts = vim.tbl_deep_extend("force", defaults, opts or {})
+
+    timer = vim.uv.new_timer()
+
+    timer:start(
+        opts.delay, -- delay (ms)
+        opts.interval, -- repeat (ms)
+        vim.schedule_wrap(function()
+            vim.notify("Time to drink some water", vim.log.levels.WARN)
+        end)
+    )
 end
 
 function M.stop()
-  if not timer then
-    return
-  end
+    if not timer then
+        return
+    end
 
-  timer:stop()
-  timer:close()
-  timer = nil
+    pcall(function()
+        timer:stop()
+        timer:close()
+    end)
+    timer = nil
 end
 
 return M
